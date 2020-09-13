@@ -1,29 +1,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/tzusman/super-soft/tls"
+	"github.com/tzusman/super-soft/util"
 )
 
 func main() {
 
-	hostnameRaw, err := exec.Command("hostname").Output()
+	proxyPort := flag.Int("proxy-port", 7000, "proxy port")
+	proxyCAPort := flag.Int("ca-cert-server", 7001, "port where the CA certificate will be served")
+	upstreamPort := flag.Int("upstream", 8080, "upstream service port")
+
+	flag.Parse()
+
+	hostname, err := util.GetHostname()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	hostname := strings.ToLower(strings.TrimSpace(string(hostnameRaw)))
-	fmt.Printf("Download ca cert to your phone at http://%s:7001\n", hostname)
-	fmt.Printf("Proxy is at https://%s:7000\n", hostname)
 
 	certDir := fmt.Sprintf("%s/.config/super-soft-proxy/", os.Getenv("HOME"))
+	_ = os.Mkdir(certDir, 0755)
+
 	caCrtFilepath := fmt.Sprintf("%s/ca.crt", certDir)
 	crtFilepath := fmt.Sprintf("%s/%s.crt", certDir, hostname)
 	keyFilepath := fmt.Sprintf("%s/%s.key", certDir, hostname)
@@ -55,7 +59,8 @@ func main() {
 		}
 	}
 
-	origin, _ := url.Parse("http://localhost:8080/")
+	upstreamURL := fmt.Sprintf("http://localhost:%d/", *upstreamPort)
+	origin, _ := url.Parse(upstreamURL)
 
 	director := func(req *http.Request) {
 		req.Header.Add("X-Forwarded-Host", req.Host)
@@ -78,10 +83,15 @@ func main() {
 			http.ServeFile(w, r, caCrtFilepath)
 		})
 
-		http.ListenAndServe(":7001", serveCA)
+		listenPort := fmt.Sprintf(":%d", *proxyCAPort)
+		http.ListenAndServe(listenPort, serveCA)
 	}()
 
-	err = http.ListenAndServeTLS(":7000", crtFilepath, keyFilepath, nil)
+	fmt.Printf("Download ca cert to your phone at http://%s:%d\n", hostname, *proxyCAPort)
+	fmt.Printf("Proxy is at https://%s:%d\n", hostname, *proxyPort)
+
+	listenPort := fmt.Sprintf(":%d", *proxyPort)
+	err = http.ListenAndServeTLS(listenPort, crtFilepath, keyFilepath, nil)
 	if err != nil {
 		panic(err)
 	}
