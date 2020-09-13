@@ -87,8 +87,8 @@ func main() {
 		http.ListenAndServe(listenPort, serveCA)
 	}()
 
-	fmt.Printf("Download ca cert to your phone at http://%s:%d\n", hostname, *proxyCAPort)
-	fmt.Printf("Proxy is at https://%s:%d\n", hostname, *proxyPort)
+	fmt.Printf("https://%s:%d is the proxy address\n", hostname, *proxyPort)
+	fmt.Printf(" http://%s:%d serves the CA cert for easy device installation\n", hostname, *proxyCAPort)
 
 	listenPort := fmt.Sprintf(":%d", *proxyPort)
 	err = http.ListenAndServeTLS(listenPort, crtFilepath, keyFilepath, nil)
