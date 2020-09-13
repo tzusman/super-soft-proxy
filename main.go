@@ -23,7 +23,7 @@ func main() {
 	fmt.Printf("Download ca cert to your phone at http://%s:7001\n", hostname)
 	fmt.Printf("Proxy is at https://%s:7000\n", hostname)
 
-	certDir := fmt.Sprintf("%s/.config/super-soft/", os.Getenv("HOME"))
+	certDir := fmt.Sprintf("%s/.config/super-soft-proxy/", os.Getenv("HOME"))
 	caCrtFilepath := fmt.Sprintf("%s/ca.crt", certDir)
 	crtFilepath := fmt.Sprintf("%s/%s.crt", certDir, hostname)
 	keyFilepath := fmt.Sprintf("%s/%s.key", certDir, hostname)
